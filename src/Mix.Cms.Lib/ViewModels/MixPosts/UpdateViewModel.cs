@@ -14,14 +14,12 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
-using static Mix.Cms.Lib.MixEnums;
 
 namespace Mix.Cms.Lib.ViewModels.MixPosts
 {
     public class UpdateViewModel
          : ViewModelBase<MixCmsContext, MixPost, UpdateViewModel>
     {
-
         #region Properties
 
         #region Models
@@ -131,10 +129,18 @@ namespace Mix.Cms.Lib.ViewModels.MixPosts
 
         [JsonProperty("thumbnailFileStream")]
         public FileStreamViewModel ThumbnailFileStream { get; set; }
+
         [JsonProperty("attributes")]
         public MixAttributeSets.UpdateViewModel Attributes { get; set; }
+
         [JsonProperty("attributeData")]
         public MixRelatedAttributeDatas.UpdateViewModel AttributeData { get; set; }
+
+        [JsonProperty("sysCategories")]
+        public List<MixRelatedAttributeDatas.UpdateViewModel> SysCategories { get; set; }
+
+        [JsonProperty("sysTags")]
+        public List<MixRelatedAttributeDatas.UpdateViewModel> SysTags { get; set; }
 
         #region Template
 
@@ -145,28 +151,22 @@ namespace Mix.Cms.Lib.ViewModels.MixPosts
         public List<MixTemplates.UpdateViewModel> Templates { get; set; }// Post Templates
 
         [JsonIgnore]
-        public int ActivedTheme
-        {
-            get
-            {
+        public int ActivedTheme {
+            get {
                 return MixService.GetConfig<int>(MixConstants.ConfigurationKeyword.ThemeId, Specificulture);
             }
         }
 
         [JsonIgnore]
-        public string TemplateFolderType
-        {
-            get
-            {
+        public string TemplateFolderType {
+            get {
                 return MixEnums.EnumTemplateFolder.Posts.ToString();
             }
         }
 
         [JsonProperty("templateFolder")]
-        public string TemplateFolder
-        {
-            get
-            {
+        public string TemplateFolder {
+            get {
                 return CommonHelper.GetFullPath(new string[]
                 {
                     MixConstants.Folder.TemplatesFolder
@@ -180,10 +180,8 @@ namespace Mix.Cms.Lib.ViewModels.MixPosts
         #endregion Template
 
         [JsonProperty("imageUrl")]
-        public string ImageUrl
-        {
-            get
-            {
+        public string ImageUrl {
+            get {
                 if (!string.IsNullOrEmpty(Image) && (Image.IndexOf("http") == -1) && Image[0] != '/')
                 {
                     return CommonHelper.GetFullPath(new string[] {
@@ -198,10 +196,8 @@ namespace Mix.Cms.Lib.ViewModels.MixPosts
         }
 
         [JsonProperty("thumbnailUrl")]
-        public string ThumbnailUrl
-        {
-            get
-            {
+        public string ThumbnailUrl {
+            get {
                 if (Thumbnail != null && Thumbnail.IndexOf("http") == -1 && Thumbnail[0] != '/')
                 {
                     return CommonHelper.GetFullPath(new string[] {
@@ -226,6 +222,7 @@ namespace Mix.Cms.Lib.ViewModels.MixPosts
 
         [JsonProperty("columns")]
         public List<ModuleFieldViewModel> Columns { get; set; }
+
         #endregion Views
 
         #endregion Properties
@@ -348,7 +345,9 @@ namespace Mix.Cms.Lib.ViewModels.MixPosts
         }
 
         #region Async Methods
+
         #region Save Sub Models Async
+
         public override async Task<RepositoryResponse<bool>> SaveSubModelsAsync(
             MixPost parent
             , MixCmsContext _context = null, IDbContextTransaction _transaction = null)
@@ -366,7 +365,7 @@ namespace Mix.Cms.Lib.ViewModels.MixPosts
                     // Save Alias
                     result = await SaveUrlAliasAsync(parent.Id, _context, _transaction);
                 }
-                if (result.IsSucceed && MediaNavs!=null)
+                if (result.IsSucceed && MediaNavs != null)
                 {
                     // Save Medias
                     result = await SaveMediasAsync(parent.Id, _context, _transaction);
@@ -388,13 +387,13 @@ namespace Mix.Cms.Lib.ViewModels.MixPosts
                     // Save related posts
                     result = await SaveRelatedPostAsync(parent.Id, _context, _transaction);
                 }
-                if (result.IsSucceed && Pages!=null)
+                if (result.IsSucceed && Pages != null)
                 {
                     // Save Parent Category
                     result = await SaveParentPagesAsync(parent.Id, _context, _transaction);
                 }
 
-                if (result.IsSucceed && Modules!=null)
+                if (result.IsSucceed && Modules != null)
                 {
                     // Save Parent Modules
                     result = await SaveParentModulesAsync(parent.Id, _context, _transaction);
@@ -410,10 +409,10 @@ namespace Mix.Cms.Lib.ViewModels.MixPosts
             }
         }
 
-        private async Task<RepositoryResponse<bool>> SaveAttributeAsync(int id, MixCmsContext context, IDbContextTransaction transaction)
+        private async Task<RepositoryResponse<bool>> SaveAttributeAsync(int parentId, MixCmsContext context, IDbContextTransaction transaction)
         {
             var result = new RepositoryResponse<bool>() { IsSucceed = true };
-            AttributeData.ParentId = id.ToString();
+            AttributeData.ParentId = parentId.ToString();
             AttributeData.ParentType = (int)MixEnums.MixAttributeSetDataType.Post;
             var saveData = await AttributeData.Data.SaveModelAsync(true, context, transaction);
             ViewModelHelper.HandleResult(saveData, ref result);
@@ -421,7 +420,31 @@ namespace Mix.Cms.Lib.ViewModels.MixPosts
             {
                 AttributeData.Id = saveData.Data.Id;
                 var saveRelated = await AttributeData.SaveModelAsync(true, context, transaction);
-                ViewModelHelper.HandleResult(saveRelated    , ref result);
+                ViewModelHelper.HandleResult(saveRelated, ref result);
+            }
+
+            foreach (var item in SysCategories)
+            {
+                if (result.IsSucceed)
+                {
+                    item.ParentId = parentId.ToString();
+                    item.ParentType = (int)MixEnums.MixAttributeSetDataType.Post;
+                    item.Specificulture = Specificulture;
+                    var saveResult = await item.SaveModelAsync(false, context, transaction);
+                    ViewModelHelper.HandleResult(saveResult, ref result);
+                }
+            }
+
+            foreach (var item in SysTags)
+            {
+                if (result.IsSucceed)
+                {
+                    item.ParentId = parentId.ToString();
+                    item.ParentType = (int)MixEnums.MixAttributeSetDataType.Post;
+                    item.Specificulture = Specificulture;
+                    var saveResult = await item.SaveModelAsync(false, context, transaction);
+                    ViewModelHelper.HandleResult(saveResult, ref result);
+                }
             }
             return result;
         }
@@ -582,7 +605,7 @@ namespace Mix.Cms.Lib.ViewModels.MixPosts
             return result;
         }
 
-        #endregion
+        #endregion Save Sub Models Async
 
         public override async Task<RepositoryResponse<bool>> RemoveRelatedModelsAsync(UpdateViewModel view, MixCmsContext _context = null, IDbContextTransaction _transaction = null)
         {
@@ -652,11 +675,13 @@ namespace Mix.Cms.Lib.ViewModels.MixPosts
         {
             return base.CloneAsync(model, cloneCultures, _context, _transaction);
         }
+
         #endregion Async Methods
 
         #region Sync Methods
 
         #region Save Sub Models
+
         public override RepositoryResponse<bool> SaveSubModels(
             MixPost parent
             , MixCmsContext _context = null, IDbContextTransaction _transaction = null)
@@ -718,17 +743,37 @@ namespace Mix.Cms.Lib.ViewModels.MixPosts
             }
         }
 
-        private RepositoryResponse<bool> SaveAttribute(int id, MixCmsContext context, IDbContextTransaction transaction)
+        private RepositoryResponse<bool> SaveAttribute(int parentId, MixCmsContext context, IDbContextTransaction transaction)
         {
             var result = new RepositoryResponse<bool>() { IsSucceed = true };
-            AttributeData.ParentId = id.ToString();
+            AttributeData.ParentId = parentId.ToString();
             AttributeData.ParentType = (int)MixEnums.MixAttributeSetDataType.Post;
             var saveData = AttributeData.SaveModel(true, context, transaction);
             ViewModelHelper.HandleResult(saveData, ref result);
-            if (result.IsSucceed)
+            foreach (var item in SysCategories)
             {
-                MixAttributeSetDatas.ReadViewModel.Repository.RemoveCache(AttributeData.Data.Model, context, transaction);
+                if (result.IsSucceed)
+                {
+                    item.ParentId = parentId.ToString();
+                    item.ParentType = (int)MixEnums.MixAttributeSetDataType.Post;
+                    item.Specificulture = Specificulture;
+                    var saveResult = item.SaveModel(false, context, transaction);
+                    ViewModelHelper.HandleResult(saveResult, ref result);
+                }
             }
+
+            foreach (var item in SysTags)
+            {
+                if (result.IsSucceed)
+                {
+                    item.ParentId = parentId.ToString();
+                    item.ParentType = (int)MixEnums.MixAttributeSetDataType.Post;
+                    item.Specificulture = Specificulture;
+                    var saveResult = item.SaveModel(false, context, transaction);
+                    ViewModelHelper.HandleResult(saveResult, ref result);
+                }
+            }
+
             return result;
         }
 
@@ -894,7 +939,7 @@ namespace Mix.Cms.Lib.ViewModels.MixPosts
             return result;
         }
 
-        #endregion
+        #endregion Save Sub Models
 
         public override RepositoryResponse<bool> RemoveRelatedModels(UpdateViewModel view, MixCmsContext _context = null, IDbContextTransaction _transaction = null)
         {
@@ -960,96 +1005,7 @@ namespace Mix.Cms.Lib.ViewModels.MixPosts
             return result;
         }
 
-        #endregion  Methods
-
-        public override List<Task> GenerateRelatedData(MixCmsContext context, IDbContextTransaction transaction)
-        {
-            var tasks = new List<Task>();
-            tasks.Add(Task.Run(() =>
-            {
-                AttributeData.Data.RemoveCache(AttributeData.Data.Model, context, transaction);
-            }));
-            foreach (var item in AttributeData.Data.Values)
-            {
-                tasks.Add(Task.Run(() =>
-                {
-                    item.RemoveCache(item.Model, context, transaction);
-                }));
-            }
-
-            tasks.AddRange(RemoveCacheRelatedPosts(context, transaction));
-
-            tasks.AddRange(RemoveCacheRelatedPages(context, transaction));
-
-            tasks.AddRange(RemoveCacheRelatedModules(context, transaction));
-
-            return tasks;
-        }
-
-        private List<Task> RemoveCacheRelatedPosts(MixCmsContext context, IDbContextTransaction transaction)
-        {
-            var tasks = new List<Task>();
-            // Remove parent Pages
-            var relatedPages = context.MixRelatedPost.Include(m => m.S).Where(d => d.Specificulture == Specificulture && (d.DestinationId == Id))
-                .AsEnumerable();
-            foreach (var item in relatedPages)
-            {
-                tasks.Add(Task.Run(() =>
-                {
-                    MixPostPosts.ReadViewModel.Repository.RemoveCache(item, context, transaction);
-                }));
-
-                tasks.Add(Task.Run(() =>
-                {
-                    MixPosts.ReadListItemViewModel.Repository.RemoveCache(item.S, context, transaction);
-                }));
-
-            }
-            return tasks;
-        }
-        private List<Task> RemoveCacheRelatedModules(MixCmsContext context, IDbContextTransaction transaction)
-        {
-            var tasks = new List<Task>();
-            // Remove parent Pages
-            var relatedPages = context.MixModulePost.Include(m => m.MixModule).Where(d => d.Specificulture == Specificulture && (d.PostId == Id))
-                .AsEnumerable();
-            foreach (var item in relatedPages)
-            {
-                tasks.Add(Task.Run(() =>
-                {
-                    MixModulePosts.ReadViewModel.Repository.RemoveCache(item, context, transaction);
-                }));
-
-                tasks.Add(Task.Run(() =>
-                {
-                    MixModules.ReadListItemViewModel.Repository.RemoveCache(item.MixModule, context, transaction);
-                }));
-
-            }
-            return tasks;
-        }
-
-        private List<Task> RemoveCacheRelatedPages(MixCmsContext context, IDbContextTransaction transaction)
-        {
-            var tasks = new List<Task>();
-            // Remove parent Pages
-            var relatedPages = context.MixPagePost.Include(m => m.MixPage).Where(d => d.Specificulture == Specificulture && (d.PostId == Id))
-                .AsEnumerable();
-            foreach (var item in relatedPages)
-            {
-                tasks.Add(Task.Run(() =>
-                {
-                    MixPagePosts.ReadViewModel.Repository.RemoveCache(item, context, transaction);
-                }));
-
-                tasks.Add(Task.Run(() =>
-                {
-                    MixPages.ReadViewModel.Repository.RemoveCache(item.MixPage, context, transaction);
-                }));
-
-            }
-            return tasks;
-        }
+        #endregion Sync Methods
 
         #endregion Overrides
 
@@ -1057,7 +1013,7 @@ namespace Mix.Cms.Lib.ViewModels.MixPosts
 
         private void LoadRelatedPost(MixCmsContext _context, IDbContextTransaction _transaction)
         {
-            PostNavs = GetRelated(_context, _transaction);            
+            PostNavs = GetRelated(_context, _transaction);
         }
 
         private void LoadMedias(MixCmsContext _context, IDbContextTransaction _transaction)
@@ -1089,19 +1045,24 @@ namespace Mix.Cms.Lib.ViewModels.MixPosts
             var otherModules = MixModules.ReadListItemViewModel.Repository.GetModelListBy(
                 m => (m.Type == (int)MixEnums.MixModuleType.Content || m.Type == (int)MixEnums.MixModuleType.ListPost)
                 && m.Specificulture == Specificulture
-                && !Modules.Any(n => n.ModuleId == m.Id && n.Specificulture == m.Specificulture)
+                //&& !Modules.Any(n => n.ModuleId == m.Id && n.Specificulture == m.Specificulture)
                 , "CreatedDateTime", 1, null, 0, _context, _transaction);
-            foreach (var item in otherModules.Data.Items)
+            if (otherModules.Data != null)
             {
-                Modules.Add(new MixModulePosts.ReadViewModel()
+                foreach (var item in otherModules.Data.Items)
                 {
-                    ModuleId = item.Id,
-                    Image = item.Image,
-                    PostId = Id,
-                    Description = item.Title
-                });
+                    if (!Modules.Any(m => m.ModuleId == Id && m.Specificulture == Specificulture))
+                    {
+                        Modules.Add(new MixModulePosts.ReadViewModel()
+                        {
+                            ModuleId = item.Id,
+                            Image = item.Image,
+                            PostId = Id,
+                            Description = item.Title
+                        });
+                    }
+                }
             }
-
         }
 
         private void LoadParentPage(MixCmsContext _context, IDbContextTransaction _transaction)
@@ -1128,7 +1089,7 @@ namespace Mix.Cms.Lib.ViewModels.MixPosts
                {
                     this.View?.FileFolder
                     , this.View?.FileName
-               });           
+               });
         }
 
         private void LoadAttributes(MixCmsContext _context, IDbContextTransaction _transaction)
@@ -1182,6 +1143,21 @@ namespace Mix.Cms.Lib.ViewModels.MixPosts
                     val.Priority = field.Priority;
                     val.Field = field;
                 }
+                var getCategories = MixRelatedAttributeDatas.UpdateViewModel.Repository.GetModelListBy(m => m.Specificulture == Specificulture
+                    && m.ParentId == Id.ToString() && m.ParentType == (int)MixEnums.MixAttributeSetDataType.Post
+                    && m.AttributeSetName == MixConstants.AttributeSetName.SYSTEM_CATEGORY, _context, _transaction);
+                if (getCategories.IsSucceed)
+                {
+                    SysCategories = getCategories.Data;
+                }
+
+                var getTags = MixRelatedAttributeDatas.UpdateViewModel.Repository.GetModelListBy(m => m.Specificulture == Specificulture
+                    && m.ParentId == Id.ToString() && m.ParentType == (int)MixEnums.MixAttributeSetDataType.Post
+                    && m.AttributeSetName == MixConstants.AttributeSetName.SYSTEM_TAG, _context, _transaction);
+                if (getTags.IsSucceed)
+                {
+                    SysTags = getTags.Data;
+                }
             }
         }
 
@@ -1224,7 +1200,7 @@ namespace Mix.Cms.Lib.ViewModels.MixPosts
         //    }
         //}
 
-        List<SupportedCulture> LoadCultures(string initCulture = null, MixCmsContext _context = null, IDbContextTransaction _transaction = null)
+        private List<SupportedCulture> LoadCultures(string initCulture = null, MixCmsContext _context = null, IDbContextTransaction _transaction = null)
         {
             var getCultures = SystemCultureViewModel.Repository.GetModelList(_context, _transaction);
             var result = new List<SupportedCulture>();
@@ -1244,7 +1220,6 @@ namespace Mix.Cms.Lib.ViewModels.MixPosts
                             Lcid = culture.Lcid,
                             IsSupported = culture.Specificulture == initCulture || _context.MixPost.Any(p => p.Id == Id && p.Specificulture == culture.Specificulture)
                         });
-
                 }
             }
             return result;
@@ -1287,6 +1262,7 @@ namespace Mix.Cms.Lib.ViewModels.MixPosts
             navs.ForEach(n => n.IsActived = true);
             return navs.OrderBy(p => p.Priority).ToList();
         }
+
         public List<MixUrlAliases.UpdateViewModel> GetAliases(MixCmsContext context, IDbContextTransaction transaction)
         {
             var result = MixUrlAliases.UpdateViewModel.Repository.GetModelListBy(p => p.Specificulture == Specificulture
@@ -1300,6 +1276,7 @@ namespace Mix.Cms.Lib.ViewModels.MixPosts
                 return new List<MixUrlAliases.UpdateViewModel>();
             }
         }
+
         #endregion Expands
     }
 }

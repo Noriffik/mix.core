@@ -4,16 +4,12 @@
 
 using Microsoft.AspNet.OData;
 using Microsoft.AspNet.OData.Query;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using Mix.Cms.Lib.Models.Cms;
-using Mix.Cms.Lib.Repositories;
 using Mix.Cms.Lib.Services;
-using Mix.Cms.Lib.ViewModels;
 using Mix.Cms.Lib.ViewModels.MixAttributeSetDatas;
-using Mix.Common.Helper;
 using Mix.Domain.Core.ViewModels;
 using Newtonsoft.Json.Linq;
 using System;
@@ -106,7 +102,6 @@ namespace Mix.Cms.Api.Controllers.v1.OData.AttributeSetDatas
 
         [HttpPost, HttpOptions]
         [Route("")]
-
         public async Task<ActionResult<ODataMobileViewModel>> Save(string culture, [FromBody]JObject data)
         {
             string id = data["id"]?.Value<string>();
@@ -134,7 +129,6 @@ namespace Mix.Cms.Api.Controllers.v1.OData.AttributeSetDatas
                     {
                         return Unauthorized();
                     }
-
                 }
                 else
                 {
@@ -145,9 +139,7 @@ namespace Mix.Cms.Api.Controllers.v1.OData.AttributeSetDatas
             {
                 return NotFound();
             }
-
         }
-
 
         // Save api/odata/{culture}/attribute-set-data/portal
         [AllowAnonymous]
@@ -175,7 +167,7 @@ namespace Mix.Cms.Api.Controllers.v1.OData.AttributeSetDatas
                     {
                         _ = MixService.SendEdm(_lang, getAttrSet.Data.EdmTemplate, portalResult.Data.Data, getAttrSet.Data.EdmSubject, getAttrSet.Data.EdmFrom);
                     }
-                    
+
                     return Ok(new RepositoryResponse<JObject>
                     {
                         IsSucceed = true,
@@ -336,6 +328,5 @@ namespace Mix.Cms.Api.Controllers.v1.OData.AttributeSetDatas
         }
 
         #endregion Get
-
     }
 }

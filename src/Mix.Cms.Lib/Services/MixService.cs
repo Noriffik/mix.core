@@ -21,10 +21,12 @@ namespace Mix.Cms.Lib.Services
         /// The synchronize root
         /// </summary>
         private static readonly object syncRoot = new Object();
+
         /// <summary>
         /// The instance
         /// </summary>
         private static volatile MixService instance;
+
         private static volatile MixService defaultInstance;
 
         private List<string> Cultures { get; set; }
@@ -35,7 +37,7 @@ namespace Mix.Cms.Lib.Services
         private JObject Authentication { get; set; }
         private JObject IpSecuritySettings { get; set; }
         private JObject Smtp { get; set; }
-        readonly FileSystemWatcher watcher = new FileSystemWatcher();
+        private readonly FileSystemWatcher watcher = new FileSystemWatcher();
 
         public MixService()
         {
@@ -45,10 +47,8 @@ namespace Mix.Cms.Lib.Services
             watcher.EnableRaisingEvents = true;
         }
 
-        public static MixService Instance
-        {
-            get
-            {
+        public static MixService Instance {
+            get {
                 if (instance == null)
                 {
                     lock (syncRoot)
@@ -65,10 +65,8 @@ namespace Mix.Cms.Lib.Services
             }
         }
 
-        public static MixService DefaultInstance
-        {
-            get
-            {
+        public static MixService DefaultInstance {
+            get {
                 if (defaultInstance == null)
                 {
                     lock (syncRoot)
@@ -120,7 +118,6 @@ namespace Mix.Cms.Lib.Services
             string content = string.IsNullOrWhiteSpace(settings.Content) ? "{}" : settings.Content;
             jsonSettings = JObject.Parse(content);
 
-
             defaultInstance.ConnectionStrings = JObject.FromObject(jsonSettings["ConnectionStrings"]);
             defaultInstance.Authentication = JObject.FromObject(jsonSettings["Authentication"]);
             defaultInstance.IpSecuritySettings = JObject.FromObject(jsonSettings["IpSecuritySettings"]);
@@ -128,7 +125,6 @@ namespace Mix.Cms.Lib.Services
             defaultInstance.Translator = JObject.FromObject(jsonSettings["Translator"]);
             defaultInstance.GlobalSettings = JObject.FromObject(jsonSettings["GlobalSettings"]);
             defaultInstance.LocalSettings = JObject.FromObject(jsonSettings["LocalSettings"]);
-
         }
 
         private void OnChanged(object sender, FileSystemEventArgs e)
@@ -136,7 +132,6 @@ namespace Mix.Cms.Lib.Services
             Thread.Sleep(500);
             Instance.LoadConfiggurations();
         }
-
 
         public static string GetConnectionString(string name)
         {
@@ -153,7 +148,7 @@ namespace Mix.Cms.Lib.Services
             if (Instance.Cultures == null)
             {
                 var cultures = ViewModels.MixCultures.ReadViewModel.Repository.GetModelList().Data;
-                Instance.Cultures = cultures?.Select(c=>c.Specificulture).ToList() ?? new List<string>();
+                Instance.Cultures = cultures?.Select(c => c.Specificulture).ToList() ?? new List<string>();
             }
             return Instance.Cultures.Any(c => c == specificulture);
         }
@@ -172,6 +167,7 @@ namespace Mix.Cms.Lib.Services
         {
             Instance.Authentication[name] = value.ToString();
         }
+
         public static T GetIpConfig<T>(string name)
         {
             var result = Instance.IpSecuritySettings[name];
@@ -201,7 +197,6 @@ namespace Mix.Cms.Lib.Services
         {
             Instance.GlobalSettings[name] = value != null ? JToken.FromObject(value) : null;
         }
-
 
         public static T GetConfig<T>(string name, string culture)
         {
@@ -262,7 +257,6 @@ namespace Mix.Cms.Lib.Services
                         Content = defaultSettings.Content
                     };
                     return FileRepository.Instance.SaveFile(settings);
-
                 }
                 else
                 {
@@ -284,21 +278,21 @@ namespace Mix.Cms.Lib.Services
             {
                 return false;
             }
-
         }
+
         public static bool SaveSettings(string content)
         {
             var settings = FileRepository.Instance.GetFile(MixConstants.CONST_FILE_APPSETTING, string.Empty, true, "{}");
 
             settings.Content = content;
             return FileRepository.Instance.SaveFile(settings);
-
         }
+
         public static void Reload()
         {
             Instance.LoadConfiggurations();
-
         }
+
         public static void LoadFromDatabase(MixCmsContext _context = null, IDbContextTransaction _transaction = null)
         {
             UnitOfWorkHelper<MixCmsContext>.InitTransaction(_context, _transaction
@@ -306,11 +300,12 @@ namespace Mix.Cms.Lib.Services
             try
             {
                 Instance.Translator = new JObject();
-                var ListLanguage = context.MixLanguage;
-                foreach (var culture in context.MixCulture)
+                var ListLanguage = context.MixLanguage.ToList();
+                var cultures = context.MixCulture.ToList();
+                foreach (var culture in cultures)
                 {
                     JObject arr = new JObject();
-                    foreach (var lang in ListLanguage.Where(l => l.Specificulture == culture.Specificulture))
+                    foreach (var lang in ListLanguage.Where(l => l.Specificulture == culture.Specificulture).ToList())
                     {
                         JProperty l = new JProperty(lang.Keyword, lang.Value ?? lang.DefaultValue);
                         arr.Add(l);
@@ -319,11 +314,11 @@ namespace Mix.Cms.Lib.Services
                 }
 
                 Instance.LocalSettings = new JObject();
-                var listLocalSettings = context.MixConfiguration;
-                foreach (var culture in context.MixCulture)
+                var listLocalSettings = context.MixConfiguration.ToList();
+                foreach (var culture in cultures)
                 {
                     JObject arr = new JObject();
-                    foreach (var cnf in listLocalSettings.Where(l => l.Specificulture == culture.Specificulture))
+                    foreach (var cnf in listLocalSettings.Where(l => l.Specificulture == culture.Specificulture).ToList())
                     {
                         JProperty l = new JProperty(cnf.Keyword, cnf.Value);
                         arr.Add(l);
@@ -334,7 +329,6 @@ namespace Mix.Cms.Lib.Services
             }
             catch (Exception ex) // TODO: Add more specific exeption types instead of Exception only
             {
-
                 var error = UnitOfWorkHelper<MixCmsContext>.HandleException<MixLanguage>(ex, isRoot, transaction);
             }
             finally
@@ -344,13 +338,13 @@ namespace Mix.Cms.Lib.Services
                 {
                     context?.Dispose();
                 }
-
             }
         }
 
         public static Task SendEdm(string culture, string template, JObject data, string subject, string from)
         {
-            return Task.Run(() => {
+            return Task.Run(() =>
+            {
                 if (!string.IsNullOrEmpty(data["email"].Value<string>()))
                 {
                     string to = data["email"].Value<string>();
@@ -362,12 +356,12 @@ namespace Mix.Cms.Lib.Services
                         {
                             body = body.Replace($"[[{prop.Name}]]", data[prop.Name].Value<string>());
                         }
-                        MixService.SendMail(subject, body, to, from);                        
+                        MixService.SendMail(subject, body, to, from);
                     }
                 }
             });
-
         }
+
         public static void SendMail(string subject, string message, string to, string from = null)
         {
             MailMessage mailMessage = new MailMessage
@@ -400,10 +394,54 @@ namespace Mix.Cms.Lib.Services
                     };
                     smtpClient.Send(mailMessage);
                 }
-                catch
+                catch(Exception ex)
                 {
+                    MixService.LogException(ex);
                     // ToDo: cannot send mail
                 }
+            }
+        }
+
+        public static void LogException(Exception ex)
+        {
+            string fullPath = $"{Environment.CurrentDirectory}/logs/{DateTime.Now.ToString("dd-MM-yyyy")}";
+            if (!string.IsNullOrEmpty(fullPath) && !Directory.Exists(fullPath))
+            {
+                Directory.CreateDirectory(fullPath);
+            }
+            string filePath = $"{fullPath}/log_exceptions.json";
+
+            try
+            {
+                FileInfo file = new FileInfo(filePath);
+                string content = "[]";
+                if (file.Exists)
+                {
+                    using (StreamReader s = file.OpenText())
+                    {
+                        content = s.ReadToEnd();
+                    }
+                    File.Delete(filePath);
+                }
+
+                JArray arrExceptions = JArray.Parse(content);
+                JObject jex = new JObject
+                {
+                    new JProperty("CreatedDateTime", DateTime.UtcNow),
+                    new JProperty("Details", JObject.FromObject(ex))
+                };
+                arrExceptions.Add(jex);
+                content = arrExceptions.ToString();
+
+                using (var writer = File.CreateText(filePath))
+                {
+                    writer.WriteLine(content);
+                }
+            }
+            catch
+            {
+                Console.Write($"Cannot write log file {filePath}");
+                // File invalid
             }
         }
 

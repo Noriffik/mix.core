@@ -39,6 +39,8 @@ namespace Mix.Cms.Lib
             public const string ADDITIONAL_FIELD_MODULE = "sys_additional_field_module";
             public const string NAVIGATION = "sys_navigation";
             public const string MENU_ITEM = "sys_menu_item";
+            public const string SYSTEM_CATEGORY = "sys_category";
+            public const string SYSTEM_TAG = "sys_tag";
         }
 
         public static class ConfigurationKeyword
@@ -66,6 +68,7 @@ namespace Mix.Cms.Lib
             public const string DefaultContentStatus = "DefaultContentStatus";
             public const string NextSyncContent = "NextSyncContent";
         }
+
         public static class TemplateFolder
         {
             public const string Masters = "Masters";
@@ -76,6 +79,15 @@ namespace Mix.Cms.Lib
             public const string Forms = "Forms";
             public const string Edms = "Edms";
         }
+
+        public static class DefaultTemplate
+        {
+            public const string Master = "_Layout";
+            public const string Page = "_Blank.cshtml";
+            public const string Post = "_Blank.cshtml";
+            public const string Module = "_Blank.cshtml";
+        }
+
         public static class Folder
         {
             public const string FileFolder = @"content";
@@ -86,6 +98,7 @@ namespace Mix.Cms.Lib
             public const string UploadFolder = @"Content/Uploads";
             public const string WebRootPath = @"wwwroot";
         }
+
         public class ServiceHub
         {
             public const string ReceiveMethod = "receive_message";
@@ -99,7 +112,6 @@ namespace Mix.Cms.Lib
             public const string NewMessage = "new_message";
             public const string NewNotification = "new_notification";
             public const string NewMember = "new_member";
-
         }
     }
 }

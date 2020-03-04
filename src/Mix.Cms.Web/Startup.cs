@@ -1,3 +1,4 @@
+using GraphiQl;
 using Microsoft.AspNet.OData.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -6,10 +7,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Mix.Cms.Api.GraphQL;
 using Mix.Cms.Lib.Models.Account;
 using Mix.Cms.Lib.Models.Cms;
 using Mix.Cms.Lib.Services;
-using Newtonsoft.Json.Serialization;
 
 namespace Mix.Cms.Web
 {
@@ -27,9 +28,7 @@ namespace Mix.Cms.Web
         {
             services.AddControllersWithViews()
                 .AddRazorRuntimeCompilation()
-                .AddNewtonsoftJson(options =>
-            options.SerializerSettings.ContractResolver =
-              new CamelCasePropertyNamesContractResolver()); ;
+                .AddNewtonsoftJson();
 
             #region Addictionals Config for Mixcore Cms
 
@@ -47,17 +46,17 @@ namespace Mix.Cms.Web
                mvcOptions.EnableEndpointRouting = false);
 
             services.AddOData();
-            /* Mix: End Inject Services */
+            services.AddMyGraphQL();
 
+            /* Mix: End Inject Services */
 
             VerifyInitData(services);
 
             ConfigAuthorization(services, Configuration);
 
-
             /* End Addictional Config for Mixcore Cms  */
 
-            #endregion
+            #endregion Addictionals Config for Mixcore Cms
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -74,21 +73,22 @@ namespace Mix.Cms.Web
                 app.UseHsts();
             }
             app.UseStaticFiles();
-
+            app.UseGraphiQl("/api/graphql");
+            
             app.UseRouting();
             app.UseAuthentication();
             app.UseAuthorization();
-            
+
             #region Addictionals Config for Mixcore Cms
+
             if (MixService.GetConfig<bool>("IsHttps"))
             {
                 app.UseHttpsRedirection();
             }
 
             ConfigRoutes(app);
-           
-            #endregion
 
+            #endregion Addictionals Config for Mixcore Cms
         }
 
         // Mix: Check custom cms config

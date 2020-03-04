@@ -1,10 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
-using Microsoft.Extensions.Caching.Memory;
 using Mix.Cms.Lib;
 using Mix.Cms.Lib.Services;
 using Mix.Identity.Models;
@@ -13,10 +10,9 @@ namespace Mix.Cms.Web.Controllers
 {
     public class PortalController : BaseController
     {
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly IApiDescriptionGroupCollectionProvider _apiExplorer;
+
         #region overrides
-        
+
         protected override void ValidateRequest()
         {
             base.ValidateRequest();
@@ -37,8 +33,10 @@ namespace Mix.Cms.Web.Controllers
             }
         }
 
-        #endregion
+        #endregion overrides
+
         #region Routes
+
         [HttpGet]
         [Authorize]
         [Route("portal")]
@@ -63,6 +61,7 @@ namespace Mix.Cms.Web.Controllers
                 return Redirect(_redirectUrl);
             }
         }
-        #endregion
+
+        #endregion Routes
     }
 }

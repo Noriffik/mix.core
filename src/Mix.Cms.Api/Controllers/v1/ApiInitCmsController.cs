@@ -2,7 +2,6 @@
 // The Mixcore Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -34,16 +33,13 @@ namespace Mix.Cms.Api.Controllers.v1
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly RoleManager<IdentityRole> _roleManager;
-        private readonly IApplicationLifetime _appLifetime;
-        private readonly IHostingEnvironment _env;
         private readonly IdentityHelper _idHelper;
+
         public ApiInitCmsController(
            UserManager<ApplicationUser> userManager,
            SignInManager<ApplicationUser> signInManager,
            RoleManager<IdentityRole> roleManager,
             Microsoft.AspNetCore.SignalR.IHubContext<Hub.PortalHub> hubContext,
-            IApplicationLifetime appLifetime,
-            IHostingEnvironment env,
             IMemoryCache memoryCache
             )
             : base(null, memoryCache, hubContext)
@@ -51,17 +47,10 @@ namespace Mix.Cms.Api.Controllers.v1
             _userManager = userManager;
             _signInManager = signInManager;
             _roleManager = roleManager;
-            _appLifetime = appLifetime;
-            _env = env;
             _idHelper = new IdentityHelper(userManager, signInManager, roleManager);
-        }
-        public void ShutdownSite()
-        {
-            _appLifetime.StopApplication();
         }
 
         #region Post
-
 
         /// <summary>
         /// Step 1 when status = 0
@@ -124,7 +113,7 @@ namespace Mix.Cms.Api.Controllers.v1
                         // Save to cms db context
 
                         await model.SaveModelAsync();
-                        
+
                         var token = await _idHelper.GenerateAccessTokenAsync(user, true);
                         if (token != null)
                         {
@@ -154,7 +143,6 @@ namespace Mix.Cms.Api.Controllers.v1
 
             return result;
         }
-
 
         // /// <summary>
         // /// Step 3 Run when status = 2
@@ -220,7 +208,6 @@ namespace Mix.Cms.Api.Controllers.v1
             return new RepositoryResponse<bool>();
         }
 
-
         /// <summary>
         /// Step 5 when status = 4 (Finished)
         ///     - Init default theme
@@ -285,6 +272,7 @@ namespace Mix.Cms.Api.Controllers.v1
             }
             return new RepositoryResponse<Lib.ViewModels.MixThemes.InitViewModel>() { Status = 501 };
         }
+
         #endregion Post
 
         #region Helpers
@@ -299,7 +287,7 @@ namespace Mix.Cms.Api.Controllers.v1
             MixService.SetConfig(MixConstants.CONST_SETTING_LANGUAGE, model.Culture.Specificulture);
 
             var result = await InitCmsService.InitCms(model.SiteName, model.Culture);
-            
+
             if (result.IsSucceed)
             {
                 await InitRolesAsync();
@@ -312,7 +300,7 @@ namespace Mix.Cms.Api.Controllers.v1
             }
             else
             {
-                // if cannot init cms 
+                // if cannot init cms
                 //  => reload from default settings
                 //  => save to appSettings
                 MixService.Reload();
@@ -337,7 +325,6 @@ namespace Mix.Cms.Api.Controllers.v1
             return isSucceed;
         }
 
-
-        #endregion
+        #endregion Helpers
     }
 }

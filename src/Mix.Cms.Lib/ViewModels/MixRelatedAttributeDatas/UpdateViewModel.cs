@@ -22,31 +22,43 @@ namespace Mix.Cms.Lib.ViewModels.MixRelatedAttributeDatas
         }
 
         #region Model
+
         /*
          * Attribute Set Data Id
          */
+
         [JsonProperty("id")]
         public string Id { get; set; }
+
         /*
          * Parent Id: PostId / PageId / Module Id / Data Id / Attr Set Id
          */
+
         [JsonProperty("parentId")]
         public string ParentId { get; set; }
+
         [JsonProperty("parentType")]
         public int ParentType { get; set; }
+
         [JsonProperty("attributeSetId")]
         public int AttributeSetId { get; set; }
+
         [JsonProperty("attributeSetName")]
         public string AttributeSetName { get; set; }
+
         [JsonProperty("createdDateTime")]
         public DateTime CreatedDateTime { get; set; }
+
         [JsonProperty("status")]
         public int Status { get; set; }
+
         [JsonProperty("description")]
         public string Description { get; set; }
 
-        #endregion
+        #endregion Model
+
         #region Views
+
         [JsonProperty("data")]
         public MixAttributeSetDatas.UpdateViewModel Data { get; set; }
 
@@ -72,23 +84,18 @@ namespace Mix.Cms.Lib.ViewModels.MixRelatedAttributeDatas
             {
                 Data = getData.Data;
             }
-            AttributeSetName = _context.MixAttributeSet.FirstOrDefault(m => m.Id == AttributeSetId)?.Name;   
+            AttributeSetName = _context.MixAttributeSet.FirstOrDefault(m => m.Id == AttributeSetId)?.Name;
         }
 
-        public override List<Task> GenerateRelatedData(MixCmsContext context, IDbContextTransaction transaction)
-        {
-            var tasks = new List<Task>();
-            tasks.Add(Task.Factory.StartNew(() =>
-            {
-                Data.GenerateCache(Data.Model, Data);
-            }));
-            return tasks;
-        }
-
-        #region Async
-
-
-        #endregion Async
+        //public override List<Task> GenerateRelatedData(MixCmsContext context, IDbContextTransaction transaction)
+        //{
+        //    var tasks = new List<Task>();
+        //    tasks.Add(Task.Factory.StartNew(() =>
+        //    {
+        //        Data.GenerateCache(Data.Model, Data);
+        //    }));
+        //    return tasks;
+        //}
 
         #endregion overrides
     }

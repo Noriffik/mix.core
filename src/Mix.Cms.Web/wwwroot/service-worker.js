@@ -18,7 +18,8 @@ const avoidCachingPaths = [
   // Example: /\/api\/.*/
   '/\/api\/.*',
   '/\/portal\/.*',
-  '/\/app\/.*'
+  '/\/app\/.*',
+  '/\/security\/.*'
 ];
 
 function pathComparer(requestUrl, pathRegEx) {
@@ -39,14 +40,14 @@ function comparePaths(requestUrl, pathsArray) {
 }
 
 self.addEventListener("install", function (event) {
-  console.log("[PWA Builder] Install Event processing");
+  console.log("[PWA] Install Event processing");
 
-  console.log("[PWA Builder] Skip waiting on install");
+  console.log("[PWA] Skip waiting on install");
   self.skipWaiting();
 
   event.waitUntil(
     caches.open(CACHE).then(function (cache) {
-      console.log("[PWA Builder] Caching pages during install");
+      console.log("[PWA] Caching pages during install");
 
       return cache.addAll(precacheFiles).then(function () {
         //if (offlineFallbackPage === "offline.html") {
@@ -61,7 +62,7 @@ self.addEventListener("install", function (event) {
 
 // Allow sw to control of current page
 self.addEventListener("activate", function (event) {
-  console.log("[PWA Builder] Claiming clients for current page");
+  console.log("[PWA] Claiming clients for current page");
   event.waitUntil(self.clients.claim());
 });
 
@@ -107,7 +108,7 @@ function cacheFirstFetch(event) {
               return;
             }
 
-            console.log("[PWA Builder] Network request failed and no cache." + error);
+            console.log("[PWA] Network request failed and no cache." + error);
             // Use the precached offline page as fallback
             return caches.open(CACHE).then(function (cache) {
               cache.match(offlineFallbackPage);
@@ -157,3 +158,4 @@ function updateCache(request, response) {
 
   return Promise.resolve();
 }
+

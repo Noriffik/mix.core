@@ -31,17 +31,15 @@ namespace Mix.Cms.Api.Controllers.v1
     {
         public ApiThemeController(MixCmsContext context, IMemoryCache memoryCache, Microsoft.AspNetCore.SignalR.IHubContext<Hub.PortalHub> hubContext) : base(context, memoryCache, hubContext)
         {
-
         }
-        #region Get
 
+        #region Get
 
         // GET api/theme/id
         [HttpGet, HttpOptions]
         [Route("sync/{id}")]
         public async Task<RepositoryResponse<List<Lib.ViewModels.MixTemplates.UpdateViewModel>>> Sync(int id)
         {
-
             var getTemplate = await Lib.ViewModels.MixTemplates.UpdateViewModel.Repository.GetModelListByAsync(
                  template => template.ThemeId == id).ConfigureAwait(false);
             foreach (var item in getTemplate.Data)
@@ -78,43 +76,48 @@ namespace Mix.Cms.Api.Controllers.v1
             string outputPath = $"Exports/Themes/{getTheme.Data.Name}";
             data.ThemeName = getTheme.Data.Name;
             data.Specificulture = _lang;
-            data.ProcessSelectedExportDataAsync();
-            string filename = $"schema";
-            var file = new FileViewModel()
+            var result = data.ProcessSelectedExportDataAsync();
+            if (result.IsSucceed)
             {
-                Filename = filename,
-                Extension = ".json",
-                FileFolder = $"{tempPath}/Data",
-                Content = JObject.FromObject(data).ToString()
-            };
+                string filename = $"schema";
+                var file = new FileViewModel()
+                {
+                    Filename = filename,
+                    Extension = ".json",
+                    FileFolder = $"{tempPath}/Data",
+                    Content = JObject.FromObject(data).ToString()
+                };
 
-            // Delete Existing folder
-            FileRepository.Instance.DeleteFolder(outputPath);
-            // Copy current templates file
-            FileRepository.Instance.CopyDirectory($"{getTheme.Data.TemplateFolder}", $"{tempPath}/Templates");
-            // Copy current assets files
-            FileRepository.Instance.CopyDirectory($"wwwroot/{getTheme.Data.AssetFolder}", $"{tempPath}/Assets");
-            // Copy current uploads files
-            FileRepository.Instance.CopyDirectory($"wwwroot/{getTheme.Data.UploadsFolder}", $"{tempPath}/Uploads");
-            // Save Site Structures
-            FileRepository.Instance.SaveFile(file);
+                // Delete Existing folder
+                FileRepository.Instance.DeleteFolder(outputPath);
+                // Copy current templates file
+                FileRepository.Instance.CopyDirectory($"{getTheme.Data.TemplateFolder}", $"{tempPath}/Templates");
+                // Copy current assets files
+                FileRepository.Instance.CopyDirectory($"wwwroot/{getTheme.Data.AssetFolder}", $"{tempPath}/Assets");
+                // Copy current uploads files
+                FileRepository.Instance.CopyDirectory($"wwwroot/{getTheme.Data.UploadsFolder}", $"{tempPath}/Uploads");
+                // Save Site Structures
+                FileRepository.Instance.SaveFile(file);
 
-            // Zip to [theme_name].zip ( wwwroot for web path)
-            string filePath = FileRepository.Instance.ZipFolder($"{tempPath}", outputPath, $"{getTheme.Data.Name}-{Guid.NewGuid()}");
+                // Zip to [theme_name].zip ( wwwroot for web path)
+                string filePath = FileRepository.Instance.ZipFolder($"{tempPath}", outputPath, $"{getTheme.Data.Name}-{Guid.NewGuid()}");
 
+                // Delete temp folder
+                FileRepository.Instance.DeleteWebFolder($"{outputPath}/Assets");
+                FileRepository.Instance.DeleteWebFolder($"{outputPath}/Uploads");
+                FileRepository.Instance.DeleteWebFolder($"{outputPath}/Templates");
+                FileRepository.Instance.DeleteWebFolder($"{outputPath}/Data");
 
-
-            // Delete temp folder
-            FileRepository.Instance.DeleteWebFolder($"{outputPath}/Assets");
-            FileRepository.Instance.DeleteWebFolder($"{outputPath}/Uploads");
-            FileRepository.Instance.DeleteWebFolder($"{outputPath}/Templates");
-            FileRepository.Instance.DeleteWebFolder($"{outputPath}/Data");
-
-            return new RepositoryResponse<string>()
+                return new RepositoryResponse<string>()
+                {
+                    IsSucceed = !string.IsNullOrEmpty(outputPath),
+                    Data = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/{filePath}"
+                };
+            }
+            else
             {
-                IsSucceed = !string.IsNullOrEmpty(outputPath),
-                Data = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/{filePath}"
-            };
+                return result;
+            }
         }
 
         // GET api/theme/id
@@ -184,7 +187,6 @@ namespace Mix.Cms.Api.Controllers.v1
             }
         }
 
-
         #endregion Get
 
         #region Post
@@ -210,7 +212,6 @@ namespace Mix.Cms.Api.Controllers.v1
                 FileRepository.Instance.SaveWebFile(theme, theme.FileName, importFolder);
             }
 
-
             if (data != null)
             {
                 data.CreatedBy = User.Claims.FirstOrDefault(c => c.Type == "Username")?.Value;
@@ -232,7 +233,6 @@ namespace Mix.Cms.Api.Controllers.v1
         public async Task<ActionResult<JObject>> GetList(
             [FromBody] RequestPaging request)
         {
-
             ParseRequestPagingDate(request);
             Expression<Func<MixTheme, bool>> predicate = model =>
                 string.IsNullOrWhiteSpace(request.Keyword)
@@ -250,6 +250,7 @@ namespace Mix.Cms.Api.Controllers.v1
                 case "portal":
                     var portalResult = await base.GetListAsync<UpdateViewModel>(request, predicate);
                     return Ok(JObject.FromObject(portalResult));
+
                 default:
 
                     var listItemResult = await base.GetListAsync<ReadViewModel>(request, predicate);
