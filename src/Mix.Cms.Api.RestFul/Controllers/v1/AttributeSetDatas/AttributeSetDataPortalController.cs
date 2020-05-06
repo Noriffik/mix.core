@@ -84,6 +84,51 @@ namespace Mix.Cms.Api.RestFul.Controllers.v1
             }
         }
 
+        // GET api/attribute-set-data
+        [HttpGet("export-tcl")]
+        public async Task<ActionResult> ExportTCL()
+        {
+            string attributeSetName = Request.Query["attributeSetName"].ToString();
+            string exportPath = $"exports/module/{attributeSetName}";
+            var getData = await Helper.FilterByKeywordAsync<FormPortalViewModel>(_lang, Request);
+            var headers = new List<string>()
+            {
+                "Customer Name", "User Name", "Package 1", "Package 1 Details","Package 2","Package 2 Defails","Package 3","Package 3 Details","Gift 1","Gift 2","Gift 3", "Total Unit"
+            };
+            var jData = new List<JObject>();
+            if (getData.IsSucceed)
+            {
+                ParsePackageData(getData.Data, jData);
+                var result = Lib.ViewModels.MixAttributeSetDatas.Helper.ExportAttributeToExcel(jData, string.Empty, exportPath, $"{attributeSetName}", null);
+                return Ok(result.Data);
+            }
+            else
+            {
+                return BadRequest(getData.Errors);
+            }
+        }
+
+        private static void ParsePackageData(PaginationModel<FormPortalViewModel> data, List<JObject> jData)
+        {
+            foreach (var item in data.Items)
+            {
+                JObject result = new JObject(
+                    new JProperty("", item.Obj["customer_name"]),
+                    new JProperty("", item.Obj["username"])
+                    );
+                var packages = item.Obj["order_packages"] as JArray;
+                foreach (var packObj in packages)
+                {
+                    var pIndex = packages.IndexOf(packObj);
+                    var pack = packObj.ToObject<FormViewModel>();
+                    result.Add(new JProperty($"Package {pIndex}", pack.Obj["quantity"]));
+                }
+                jData.Add(item.Obj);
+            }
+        }
+
+
+
         // POST api/attribute-set-data
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "SuperAdmin, Admin")]
         [HttpPost, HttpOptions]
